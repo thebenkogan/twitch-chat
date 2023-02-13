@@ -1,26 +1,17 @@
-import type { Component } from 'solid-js';
-
-import logo from './logo.svg';
-import styles from './App.module.css';
+import { Component, createEffect, For, on } from "solid-js";
+import useMessages from "./tmi";
 
 const App: Component = () => {
+  const messages = useMessages();
+  let bottom: HTMLDivElement;
+
+  createEffect(on(messages, (v) => bottom.scrollIntoView()));
+
   return (
-    <div class={styles.App}>
-      <header class={styles.header}>
-        <img src={logo} class={styles.logo} alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          class={styles.link}
-          href="https://github.com/solidjs/solid"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn Solid
-        </a>
-      </header>
-    </div>
+    <>
+      <For each={messages()}>{(m) => <div class="p-3">{m.message}</div>}</For>
+      <div ref={bottom!} class="h-0"></div>
+    </>
   );
 };
 
