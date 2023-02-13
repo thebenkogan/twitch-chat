@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { Accessor, createSignal } from "solid-js";
 import tmi from "tmi.js";
 
 const MESSAGE_LIMIT = 100;
@@ -14,19 +14,21 @@ type Message = {
   message: string;
 };
 
-function useMessages() {
-  const [messages, setMessages] = createSignal<Message[]>([]);
+function useMessages(getSync: Accessor<boolean>) {
+  const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
+  const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
 
   client.on("message", (channel, tags, message, self) => {
-    setMessages((messages) => {
-      const new_messages =
-        messages.length >= MESSAGE_LIMIT ? messages.slice(1) : messages.slice();
-      new_messages.push({ user: tags["display-name"]!, message });
-      return new_messages;
-    });
+    const new_messages =
+      syncedMessages().length >= MESSAGE_LIMIT
+        ? syncedMessages().slice(1)
+        : syncedMessages().slice();
+    new_messages.push({ user: tags["display-name"]!, message });
+    setSyncedMessages(new_messages);
+    if (getSync()) setDisplayMessages(new_messages);
   });
 
-  return messages;
+  return displayMessages;
 }
 
 export default useMessages;
