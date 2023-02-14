@@ -1,4 +1,4 @@
-import { Accessor, createSignal } from "solid-js";
+import { Accessor, createEffect, createSignal, on } from "solid-js";
 import tmi from "tmi.js";
 
 const MESSAGE_LIMIT = 100;
@@ -17,6 +17,13 @@ type Message = {
 function useMessages(getSync: Accessor<boolean>) {
   const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
   const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
+
+  // immediately sync display messages (don't wait for next message)
+  createEffect(
+    on(getSync, (gs) => gs && setDisplayMessages(syncedMessages()), {
+      defer: true,
+    })
+  );
 
   client.on("message", (channel, tags, message, self) => {
     const new_messages =
