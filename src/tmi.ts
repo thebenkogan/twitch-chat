@@ -4,7 +4,7 @@ import tmi from "tmi.js";
 const MESSAGE_LIMIT = 100;
 
 const client = new tmi.Client({
-  channels: ["xQc"],
+  channels: ["xqc"],
 });
 
 client.connect();
