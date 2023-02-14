@@ -11,6 +11,7 @@ client.connect();
 
 export type Message = {
   user: string;
+  userColor: string;
   message: string;
 };
 
@@ -30,7 +31,11 @@ function useMessages(getSync: Accessor<boolean>) {
       syncedMessages().length >= MESSAGE_LIMIT
         ? syncedMessages().slice(1)
         : syncedMessages().slice();
-    new_messages.push({ user: tags["display-name"]!, message });
+    new_messages.push({
+      user: tags["display-name"]!,
+      userColor: tags["color"] ?? "#000000",
+      message,
+    });
     setSyncedMessages(new_messages);
     if (getSync()) setDisplayMessages(new_messages);
   });
