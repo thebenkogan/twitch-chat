@@ -4,12 +4,12 @@ import tmi from "tmi.js";
 const MESSAGE_LIMIT = 100;
 
 const client = new tmi.Client({
-  channels: ["xqc"],
+  channels: ["KaiCenat"],
 });
 
 client.connect();
 
-type Message = {
+export type Message = {
   user: string;
   message: string;
 };

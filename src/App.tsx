@@ -1,4 +1,6 @@
 import { Component, createEffect, For, on, createSignal, Show } from "solid-js";
+import ChatMessage from "./components/ChatMessage";
+import ResumeScroll from "./components/ResumeScroll";
 import useMessages from "./tmi";
 
 const App: Component = () => {
@@ -10,14 +12,9 @@ const App: Component = () => {
 
   return (
     <div onWheel={(e) => e.deltaY < 0 && setShouldScroll(false)}>
-      <For each={messages()}>{(m) => <div class="p-3">{m.message}</div>}</For>
+      <For each={messages()}>{(cm) => <ChatMessage cm={cm} />}</For>
       <Show when={!shouldScroll()}>
-        <button
-          onClick={() => setShouldScroll(true)}
-          class="p-3 fixed bottom-0 left-1/2 -translate-x-1/2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 mb-5 rounded"
-        >
-          Resume Scrolling
-        </button>
+        <ResumeScroll onClick={() => setShouldScroll(true)} />
       </Show>
       <div ref={bottom!} class="h-0"></div>
     </div>

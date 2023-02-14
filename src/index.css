@@ -2,8 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* @layer base {
-  * {
-    overflow-anchor: none;
+@layer base {
+  body {
+    @apply bg-zinc-700;
+    @apply overflow-x-hidden;
   }
-} */
+}
