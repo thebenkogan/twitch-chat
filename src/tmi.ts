@@ -9,11 +9,30 @@ const client = new tmi.Client({
 
 client.connect();
 
+export type EmoteRange = {
+  start: number;
+  end: number;
+};
+
 export type Message = {
   user: string;
   userColor: string;
   message: string;
+  emotes?: Record<string, EmoteRange[]>;
 };
+
+function getEmotes(
+  rawEmotes: Record<string, string[]>
+): Record<string, EmoteRange[]> {
+  const emotes: Record<string, EmoteRange[]> = {};
+  for (const [emoteId, ranges] of Object.entries(rawEmotes)) {
+    emotes[emoteId] = ranges.map((range) => {
+      const [start, end] = range.split("-");
+      return { start: Number(start), end: Number(end) };
+    });
+  }
+  return emotes;
+}
 
 function useMessages(getSync: Accessor<boolean>) {
   const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
@@ -35,6 +54,7 @@ function useMessages(getSync: Accessor<boolean>) {
       user: tags["display-name"]!,
       userColor: tags["color"] ?? "#000000",
       message,
+      emotes: !!tags["emotes"] ? getEmotes(tags["emotes"]) : undefined,
     });
     setSyncedMessages(new_messages);
     if (getSync()) setDisplayMessages(new_messages);
