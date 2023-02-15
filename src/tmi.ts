@@ -3,12 +3,6 @@ import tmi from "tmi.js";
 
 const MESSAGE_LIMIT = 100;
 
-const client = new tmi.Client({
-  channels: ["KaiCenat"],
-});
-
-client.connect();
-
 export type EmoteRange = {
   start: number;
   end: number;
@@ -34,16 +28,15 @@ function getEmotes(
   return emotes;
 }
 
-function useMessages(getSync: Accessor<boolean>) {
-  const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
-  const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
+const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
+const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
 
-  // immediately sync display messages (don't wait for next message)
-  createEffect(
-    on(getSync, (gs) => gs && setDisplayMessages(syncedMessages()), {
-      defer: true,
-    })
-  );
+export function startChat(channel: string) {
+  const client = new tmi.Client({
+    channels: [channel],
+  });
+
+  client.connect();
 
   client.on("message", (channel, tags, message, self) => {
     const new_messages =
@@ -57,10 +50,21 @@ function useMessages(getSync: Accessor<boolean>) {
       emotes: !!tags["emotes"] ? getEmotes(tags["emotes"]) : undefined,
     });
     setSyncedMessages(new_messages);
-    if (getSync()) setDisplayMessages(new_messages);
   });
+
+  return client;
+}
+
+export function useMessages(getSync: Accessor<boolean>) {
+  // immediately sync display messages (don't wait for next message)
+  createEffect(
+    on(getSync, (gs) => gs && setDisplayMessages(syncedMessages()), {
+      defer: true,
+    })
+  );
+
+  // update displayed messages on message received if sync enabled
+  createEffect(on(syncedMessages, (sm) => getSync() && setDisplayMessages(sm)));
 
   return displayMessages;
 }
-
-export default useMessages;
