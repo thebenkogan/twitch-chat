@@ -1,4 +1,4 @@
-import { Component } from "solid-js";
+import { Component, JSX } from "solid-js";
 import { Message, EmoteRange } from "../tmi";
 
 const getEmoteLink = (emoteId: string) =>
@@ -17,29 +17,21 @@ function generateEmoteMessage(
     .flatMap(([id, rs]) => rs.map((r) => [id, r] as const))
     .sort(([, { start: s1 }], [, { start: s2 }]) => (s1 > s2 ? 1 : -1));
 
-  const messageFragments: string[] = []; // set of text fragments in message
-  const emoteFragments: string[] = []; // set of emote ids in between each message fragment
+  const fragments: (string | JSX.Element)[] = [];
 
   // iterate through ordered emotes and extract emote/message fragments
   let offset = 0;
   let messageTrim = message;
   for (const [id, { start, end }] of orderedEmotes) {
     const fragment = messageTrim.substring(0, start - offset);
-    messageFragments.push(fragment);
-    emoteFragments.push(id);
+    fragments.push(fragment);
+    fragments.push(<img class="inline" src={getEmoteLink(id)} />);
     messageTrim = messageTrim.substring(end - offset + 1);
     offset += fragment.length + (end - start) + 1;
   }
-  messageFragments.push(messageTrim);
+  fragments.push(messageTrim);
 
-  // interleave the message fragments with the emote img elements
-  const interleaved = emoteFragments.flatMap((emoteId, i) => [
-    <img class="inline" src={getEmoteLink(emoteId)} />,
-    messageFragments[i],
-  ]);
-  interleaved.push(messageFragments[messageFragments.length - 1]);
-
-  return interleaved;
+  return fragments;
 }
 
 const ChatMessage: Component<ChatMessageProps> = (props) => {
