@@ -20,6 +20,7 @@ const Chat: Component = () => {
   const messages = useMessages(shouldScroll);
   let bottom: HTMLDivElement;
   let client: Client;
+  let prevClientY: number;
 
   onMount(async () => (client = await startChat(channel)));
 
@@ -31,7 +32,14 @@ const Chat: Component = () => {
   createEffect(on(messages, (v) => shouldScroll() && bottom.scrollIntoView()));
 
   return (
-    <div onWheel={(e) => e.deltaY < 0 && setShouldScroll(false)}>
+    <div
+      onTouchStart={(e) => (prevClientY = e.touches[0].clientY)}
+      onTouchMove={(e) =>
+        Math.sign(e.touches[0].clientY - prevClientY) === 1 &&
+        setShouldScroll(false)
+      }
+      onWheel={(e) => e.deltaY < 0 && setShouldScroll(false)}
+    >
       <For each={messages()}>{(cm) => <ChatMessage cm={cm} />}</For>
       <Show when={!shouldScroll()}>
         <ResumeScroll onClick={() => setShouldScroll(true)} />
