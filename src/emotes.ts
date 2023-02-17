@@ -81,5 +81,3 @@ export async function getAllEmotes(channel: string) {
   emotes.forEach((e) => emoteMap.set(e.name, e.url));
   return emoteMap;
 }
-
-console.log(await getAllEmotes("xqc"));

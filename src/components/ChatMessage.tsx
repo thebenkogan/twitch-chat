@@ -1,31 +1,20 @@
 import { Component, JSX } from "solid-js";
 import { Message, EmoteRange } from "../tmi";
 
-const getEmoteLink = (emoteId: string) =>
-  `https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/1.0`;
-
 interface ChatMessageProps {
   cm: Message;
 }
 
-function generateEmoteMessage(
-  message: string,
-  emotes: Record<string, EmoteRange[]>
-) {
-  // get sorted list of emote ranges with associated ids
-  let orderedEmotes = Object.entries(emotes)
-    .flatMap(([id, rs]) => rs.map((r) => [id, r] as const))
-    .sort(([, { start: s1 }], [, { start: s2 }]) => (s1 > s2 ? 1 : -1));
-
+function generateEmoteMessage(message: string, emotes: [string, EmoteRange][]) {
   const fragments: (string | JSX.Element)[] = [];
 
   // iterate through ordered emotes and extract emote/message fragments
   let offset = 0;
   let messageTrim = message;
-  for (const [id, { start, end }] of orderedEmotes) {
+  for (const [link, { start, end }] of emotes) {
     const fragment = messageTrim.substring(0, start - offset);
     fragments.push(fragment);
-    fragments.push(<img class="inline" src={getEmoteLink(id)} />);
+    fragments.push(<img class="inline" src={link} />);
     messageTrim = messageTrim.substring(end - offset + 1);
     offset += fragment.length + (end - start) + 1;
   }
@@ -36,7 +25,7 @@ function generateEmoteMessage(
 
 const ChatMessage: Component<ChatMessageProps> = (props) => {
   const message = props.cm.emotes
-    ? generateEmoteMessage(props.cm.message, props.cm.emotes!)
+    ? generateEmoteMessage(props.cm.message, props.cm.emotes)
     : props.cm.message;
 
   const userTextColor = props.cm.userColor;

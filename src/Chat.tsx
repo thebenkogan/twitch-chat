@@ -19,8 +19,8 @@ const Chat: Component = () => {
   const messages = useMessages(shouldScroll);
   let bottom: HTMLDivElement;
 
-  onMount(() => {
-    const client = startChat(channel);
+  onMount(async () => {
+    const client = await startChat(channel);
     onCleanup(() => {
       client.disconnect();
       client.removeAllListeners();

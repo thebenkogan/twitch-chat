@@ -1,5 +1,6 @@
 import { Accessor, createEffect, createSignal, on } from "solid-js";
 import tmi from "tmi.js";
+import { getAllEmotes } from "./emotes";
 
 const MESSAGE_LIMIT = 100;
 
@@ -12,29 +13,62 @@ export type Message = {
   user: string;
   userColor: string;
   message: string;
-  emotes?: Record<string, EmoteRange[]>;
+  emotes: [string, EmoteRange][];
 };
 
+const getDefaultEmoteLink = (emoteId: string) =>
+  `https://static-cdn.jtvnw.net/emoticons/v1/${emoteId}/1.0`;
+
 function getEmotes(
-  rawEmotes: Record<string, string[]>
-): Record<string, EmoteRange[]> {
-  const emotes: Record<string, EmoteRange[]> = {};
-  for (const [emoteId, ranges] of Object.entries(rawEmotes)) {
-    emotes[emoteId] = ranges.map((range) => {
-      const [start, end] = range.split("-");
-      return { start: Number(start), end: Number(end) };
-    });
+  message: string,
+  emoteMap: Map<string, string>,
+  rawEmotes?: Record<string, string[]>
+) {
+  const emotes: [string, EmoteRange][] = [];
+
+  // default emotes offered by TMI
+  if (rawEmotes) {
+    for (const [emoteId, ranges] of Object.entries(rawEmotes)) {
+      ranges.forEach((range) => {
+        const [start, end] = range.split("-");
+        emotes.push([
+          getDefaultEmoteLink(emoteId),
+          { start: Number(start), end: Number(end) },
+        ]);
+      });
+    }
   }
-  return emotes;
+
+  // parse emotes from 7TV, BTV, and FFZ
+  let start = 0;
+  for (let i = 0; i < message.length; i++) {
+    if (message[i] === " " || i === message.length - 1) {
+      const end = i === message.length - 1 ? i : i - 1;
+      const emoteLink = emoteMap.get(message.slice(start, end + 1));
+      if (emoteLink) emotes.push([emoteLink, { start, end }]);
+      start = i + 1;
+    }
+  }
+
+  // sort emotes by start index and remove duplicates
+  const indexSet = new Set<number>();
+  return emotes
+    .filter(([_, { start }]) => {
+      if (indexSet.has(start)) return false;
+      indexSet.add(start);
+      return true;
+    })
+    .sort(([, { start: s1 }], [, { start: s2 }]) => (s1 > s2 ? 1 : -1));
 }
 
 const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
 const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
 
-export function startChat(channel: string) {
+export async function startChat(channel: string) {
   const client = new tmi.Client({
     channels: [channel],
   });
+  const emoteMap = await getAllEmotes(channel);
 
   client.connect();
 
@@ -47,7 +81,7 @@ export function startChat(channel: string) {
       user: tags["display-name"]!,
       userColor: tags["color"] ?? "#000000",
       message,
-      emotes: !!tags["emotes"] ? getEmotes(tags["emotes"]) : undefined,
+      emotes: getEmotes(message, emoteMap, tags.emotes),
     });
     setSyncedMessages(new_messages);
   });
