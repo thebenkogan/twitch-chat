@@ -9,6 +9,7 @@ import {
   onMount,
   onCleanup,
 } from "solid-js";
+import { Client } from "tmi.js";
 import ChatMessage from "./components/ChatMessage";
 import ResumeScroll from "./components/ResumeScroll";
 import { useMessages, startChat } from "./tmi";
@@ -18,13 +19,13 @@ const Chat: Component = () => {
   const [shouldScroll, setShouldScroll] = createSignal(true);
   const messages = useMessages(shouldScroll);
   let bottom: HTMLDivElement;
+  let client: Client;
 
-  onMount(async () => {
-    const client = await startChat(channel);
-    onCleanup(() => {
-      client.disconnect();
-      client.removeAllListeners();
-    });
+  onMount(async () => (client = await startChat(channel)));
+
+  onCleanup(() => {
+    client.disconnect();
+    client.removeAllListeners();
   });
 
   createEffect(on(messages, (v) => shouldScroll() && bottom.scrollIntoView()));

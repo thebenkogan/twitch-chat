@@ -65,6 +65,8 @@ const [syncedMessages, setSyncedMessages] = createSignal<Message[]>([]);
 const [displayMessages, setDisplayMessages] = createSignal<Message[]>([]);
 
 export async function startChat(channel: string) {
+  setSyncedMessages([]);
+  setDisplayMessages([]);
   const client = new tmi.Client({
     channels: [channel],
   });
