@@ -1,10 +1,10 @@
 // ugly code to get a key in a nested object without knowing the structure
-const getKeyValue = (key: string, obj: any): any => {
+const getKeyValue = (targetKey: string, obj: any): any => {
   for (const [key, value] of Object.entries(obj)) {
-    if (key === "emoticons") {
+    if (key === targetKey) {
       return value;
     } else if (value !== null && typeof value === "object") {
-      const nested = getKeyValue(key, value);
+      const nested = getKeyValue(targetKey, value);
       if (nested) return nested;
     }
   }
@@ -51,7 +51,7 @@ async function getFFZEmotes(channel: string) {
     .then((res) => res.json())
     .then((res) => getKeyValue("emoticons", res));
   return Promise.all([chEmotes, gbEmotes]).then((res) =>
-    res.flat().map<Emote>((e) => ({ name: e.name, url: e.urls[1].slice(2) }))
+    res.flat().map<Emote>((e) => ({ name: e.name, url: e.urls[1] }))
   );
 }
 
