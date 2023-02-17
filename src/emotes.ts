@@ -10,6 +10,20 @@ const getKeyValue = (targetKey: string, obj: any): any => {
   }
 };
 
+// gets twitch user id from username, needed for BTV
+// twitch OAUTH is such a pain, this is a sneaky workaround
+async function getChannelId(channel: string) {
+  const html = await fetch("https://s.kdy.ch/twitchid/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: `usrn=${channel}`,
+  }).then((res) => res.text());
+  const i = html.toLowerCase().indexOf(`${channel}: `);
+  return html.slice(i + channel.length + 2).split("<")[0];
+}
+
 type Emote = {
   name: string;
   url: string;
@@ -62,13 +76,21 @@ type BTV = {
 
 const getBTVLink = (id: string) => `https://cdn.betterttv.net/emote/${id}/1x`;
 
-async function getBTVEmotes() {
+async function getBTVEmotes(channel: string) {
+  const channelId = await getChannelId(channel);
   const globalUrl = "https://api.betterttv.net/3/cached/emotes/global";
-  return fetch(globalUrl)
-    .then((res) => res.json())
-    .then((res: BTV[]): Emote[] =>
-      res.map((e) => ({ name: e.code, url: getBTVLink(e.id) }))
+  const channelUrl = `https://api.betterttv.net/3/cached/users/twitch/${channelId}`;
+  const chEmotes: Promise<BTV[]> = fetch(channelUrl)
+    .then((res) =>
+      res.ok ? res.json() : { channelEmotes: [], sharedEmotes: [] }
+    )
+    .then((e) =>
+      getKeyValue("channelEmotes", e).concat(getKeyValue("sharedEmotes", e))
     );
+  const gbEmotes: Promise<BTV[]> = fetch(globalUrl).then((res) => res.json());
+  return Promise.all([chEmotes, gbEmotes]).then((res) =>
+    res.flat().map<Emote>((e) => ({ name: e.code, url: getBTVLink(e.id) }))
+  );
 }
 
 export async function getAllEmotes(channel: string) {
@@ -76,7 +98,7 @@ export async function getAllEmotes(channel: string) {
   const emotes = await Promise.all([
     get7TVEmotes(channel),
     getFFZEmotes(channel),
-    getBTVEmotes(),
+    getBTVEmotes(channel),
   ]).then((res) => res.flat());
   emotes.forEach((e) => emoteMap.set(e.name, e.url));
   return emoteMap;
